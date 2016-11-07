@@ -1,16 +1,14 @@
 library(RODBC)
 
 my_connect <- odbcConnect(dsn= "IP EDWP", uid= my_uid, pwd= my_pwd)
-sqlQuery(my_connect, query = "SELECT  * from dbc.dbcinfo;")
-Overages <- sqlQuery(my_connect, 
+Overages_Git_wcl <- sqlQuery(my_connect, 
                      query = "select
-                    a15.BRD_NM,
+                     a15.BRD_NM,
                      a12.OPR_BRD_STY_ID,
                      a24.BRD_DIV_DESC, 
                      a22.OPR_BRD_DEPT_ID,
                      a22.BRD_DEPT_DESC,
-                     a11.mkt_po_id,
-                     --a11.DEST_PO_ID, 
+                     a11.mkt_po_id, 
                      max(a110.CD_DTL_ABBR_NM)  Program_Type,
                      CASE
                      WHEN a11.PAR_VENDOR_ID = (-1) THEN a11.VENDOR_ID
@@ -33,12 +31,13 @@ Overages <- sqlQuery(my_connect,
                      on (z.mkt_po_id = a11.MKT_PO_ID)*/
                      /*	 left outer join (select MKT_PO_ID, sum(INV_RCPT_QTY) as INV_RCPT_QTY , Max(IN_DC_DT) as MAX_IN_DC_DT from VIEWORDER.VRRTW_RMS_RCPT_TXN_FCT where PLN_STK_DT between DATE '2015-08-02' and Date '2016-07-30'  group by MKT_PO_ID) x
                      on (x.MKT_PO_ID=a11.MKT_PO_ID)*/
-
+                     RIGHT JOIN (select MKT_PO_ID from VIEWORDER.VRRTW_RMS_RCPT_TXN_FCT where PLN_STK_DT between DATE '2015-08-02' and Date '2016-07-30'  group by MKT_PO_ID) z
+                     on (z.mkt_po_id = a11.MKT_PO_ID)
+                     
                      left outer join (SELECT SUBSTR(MKT_PO_ID, 1, 5) AS MKT_PO_ID, SUM(INV_RCPT_QTY)AS INV_RCPT_QTY FROM  SRAA_SAND.TEMP_RMS_MKT_PO
-                    GROUP BY SUBSTR(MKT_PO_ID, 1, 5)) x
-                     on (a11.MKT_PO_ID = x.MKT_PO_ID)
-                    RIGHT JOIN SRAA_SAND.CURR_MKT_PO z
-                     on (a11.mkt_po_id = z.MKT_PO_ID)
+                     GROUP BY SUBSTR(MKT_PO_ID, 1, 5)) x
+                     on (x.MKT_PO_ID = a11.MKT_PO_ID)
+                     
                      left outer join	 VIEWFNDT.TBRSD_BRD_STY_DIM	 a12
                      on 	(a11.BRD_STY_KEY = a12.BRD_STY_KEY)
                      left outer join	 VIEWFNDT.TBSCD_BRD_SCLS_DIM a13
@@ -77,13 +76,11 @@ Overages <- sqlQuery(my_connect,
                      where PLANNED_STOCKED_DATE between DATE '2015-06-02' and Date '2016-10-30'
                      --AND FCST_QTY IS NOT NULL
                      and XPLD_LN_ORD_QTY is not null
-                    and a15.BRD_NM = 'OLD NAVY'
                      --and ACTUAL_X_FACTORY_DATE <> DATE '9999-12-31'
                      and  PLANNED_STOCKED_DATE <> DATE '9999-12-31'
-                     and a11.CURRENT_EVENT not like 'CL%'
+                     and CURRENT_EVENT not like 'CL%'
                      and a11.mkt_po_id <> 'VJ8MV'
-                     and a11.LOC_KEY <> 2820 --not JPF
-                     --AND A11.MKT_PO_ID = 'WS9VG'
+                     and a11.LOC_KEY <> 2820
                      --and a110.CD_DTL_ABBR_NM <> 'VMI'
                      and (INV_RCPT_QTY is not null or  XPLD_LN_ORD_QTY <> 0)
                      --AND A11.MKT_PO_ID = 'WJ5SV'
@@ -98,8 +95,5 @@ Overages <- sqlQuery(my_connect,
                      b21.VENDOR_LEGAL_DESC, 
                      --a111.ISO2_CNTRY_CD,
                      a11.mkt_po_id
-                     --a11.DEST_PO_ID
                      
                      order by a15.BRD_NM;")
-
-curr_table <- sqlQuery(my_connect, query = "select *  from SRAA_SAND.CURR_MKT_PO")

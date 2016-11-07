@@ -1,0 +1,17 @@
+DROP TABLE SRAA_SAND.CURR_MKT_PO;
+
+CREATE TABLE SRAA_SAND.CURR_MKT_PO
+AS
+(select MKT_PO_ID, MAX(PLN_STK_DT) AS MAX_PLN_STK_DT from VIEWORDER.VRRTW_RMS_RCPT_TXN_FCT where PLN_STK_DT between DATE '2015-08-02' and Date '2016-07-30'  group by MKT_PO_ID) WITH DATA
+PRIMARY INDEX (MKT_PO_ID);
+
+
+SELECT min(Max_pln_stk_dt) as min_date, max(max_pln_stk_dt) as max_date FROM SRAA_SAND.CURR_MKT_PO
+WHERE MKT_PO_ID  like 'XK4OJ%'
+
+Select * from SRAA_SAND.CURR_MKT_PO
+where MKT_PO_ID= 'UE2KM'
+where max_pln_stk_dt = date '2015-08-02'
+
+select * from VIEWORDER.VIUFF_INBND_UNT_FCST_FCT
+where MKT_PO_ID = 'UE2KM'
