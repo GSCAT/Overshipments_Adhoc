@@ -44,7 +44,7 @@ Overages2$Total_FCST_ELC <- as.numeric(Overages2$Total_FCST_ELC)
 
   Data was pulled from the Inbound Unit Forecast table and compared against RMS _TDITW_ table in EDW for DPO's with a _Planned Stock Date_ between 8/2/1015 and 7/30/2016. Ordered Units (_XPLD LN ORD Qty_) were compared to Adjusted Receipt Units (_INV RCPT QTY_) for OLD NAVY to understand the percent difference of units ordered versus recieved. 
 
-First taking a quick look at these data after removing "FUNZONE" and VMI to check that these have been excluded.
+Taking a quick look at these data, after removing "FUNZONE" and VMI, to check that these have been excluded.
 ```{r, echo=FALSE}
 # Check droped records
 Overages2 %>% group_by(BRD_DIV_DESC) %>% 
@@ -67,12 +67,13 @@ Overages2 %>%
 
 ```
 
-Now we can calculate the percent of difference between Order Qty and Receipt Qty in order to plot a frequency distribution of the results. 
+Now we can calculate the percent difference between Order Qty and Receipt Qty in order to plot a frequency distribution of the results. 
 ```{r, echo=TRUE}
 Overages2 <- Overages2 %>% 
   mutate("Percent_diff" = ((INV_RCPT_QTY-XPLD_LN_ORD_QTY)/XPLD_LN_ORD_QTY)*100)
 Overages2 <- Overages2 %>% 
   mutate("Delta_Units" = (INV_RCPT_QTY - XPLD_LN_ORD_QTY))
+
 ```
 
 ```{r, echo=FALSE}
@@ -85,7 +86,7 @@ Overages_nodupe$n <- as.factor(Overages_nodupe$n)
 Overages_nodupe <- Overages_nodupe[order(-Overages_nodupe$Percent_diff), ]
 ```
 
-Finally, taking a look at the frequency distribution (of the percentage difference). 
+Finally, we take a look at the frequency distribution of the percent difference. 
 ```{r, echo=TRUE}
 hist(Overages_nodupe$Percent_diff, 
      main = "Histogram of % Diff", 
@@ -94,14 +95,14 @@ hist(Overages_nodupe$Percent_diff,
 axis(1, at=c(-5, 5))
 ```
 
-We can see that most PO's fall within the +- 5%. However there seems to be a heavy skew toward +5%.
+It appears most PO's fall within the +- 5% tolerance allowed. However there seems to be a heavy skew toward +5%.
 
 Now let's take a look at a quick summary to understand the extremes of these data.
 ```{r, echo=FALSE}
 summary(Overages_nodupe)
 ```
 
-We can see that there are still some large overages. Now let's take a look at the impact of those. 
+There are still some large overages in these data. Now let's take a look at the impact of those. 
 ```{r, echo=FALSE}
 Over_20 <- Overages_nodupe %>% subset(Percent_diff>20)
 Over_5 <- Overages_nodupe %>% subset(Percent_diff>5)
@@ -130,35 +131,35 @@ Under_table_5 <- Under_neg_5 %>%
 
 ```
 
-Below is the summary of the PO's with over 20% delta.
+We cab calculate the Unit impact of PO's with over 20% delta.
 ```{r, echo= FALSE}
 Over_table_20 %>% 
   as.data.frame()
 
 ```
-And the PO's over the 5% threshold.
+And also PO's over the 5% threshold.
 ```{r, echo=FALSE}
 Over_table_5%>% 
   as.data.frame()
 ```
-For good measure let's look at those negative values. First under negative 20%.
+For good measure let's look at the negative values we noted before. First Unit impact of PO's under -20%.
 ```{r, echo=FALSE}
 Under_table_20%>% 
   as.data.frame()
 ```
 
-Next under 5%.
+Next under -5%.
 ```{r, echo=FALSE}
 Under_table_5%>% 
   as.data.frame()
 ```
-Total Delta Units (including negative values) for the entire dataset:
+Now what are the Total Delta Units (including negative values) for the entire dataset:
 ```{r, echo=FALSE}
 Overages_nodupe %>% 
   summarise(Summary_of_Delta = sum(Delta_Units)) 
 ```
 
-Total Overages (Percent Delta > 0):
+Let's also consider the Total Overages (Percent Delta > 0) for the entire data set:
 ```{r, echo=FALSE}
 Total_overage <- Overages_nodupe %>% subset(Delta_Units > 0) %>% 
   summarise(Summary_of_Delta = sum(Delta_Units))%>%
@@ -171,22 +172,26 @@ Overages_nodupe %>% subset(Delta_Units > 0) %>%
   summarise(Summary_of_Delta = sum(Delta_Units))
 ```
 
-Total Underage (Percent Delta < 0):
+...And Total Underage (Percent Delta < 0) for the entire data set:
 ```{r, echo=FALSE}
 Overages_nodupe %>% subset(Delta_Units < 0) %>% summarise(Summary_of_Delta = sum(Delta_Units))
 
 
 ```
 
+So...
 
-We can see that there are still a few large overages (> 20%). But if we look at the number of units over 20% `r format(round(Over_table_20$sum_Delta_Units, digits = 0), big.mark= ",")` over the total number of units over `r format(round(Total_overage, digits = 0), big.mark= ",")`, we see that the over 20% units contribute only `r (Over_table_20$sum_Delta_Units/Total_overage)*100` percent to the total overage.
+> `r Overages_nodupe %>% subset(Delta_Units > 0) %>% summarise(Summary_of_Delta = sum(Delta_Units))` + `r Overages_nodupe %>% subset(Delta_Units < 0) %>% summarise(Summary_of_Delta = sum(Delta_Units))` = `r Total_overage`.
+
+We can see that there are still a few PO's with large overages (> 20%). But as we learned the number of units over 20% (`r format(round(Over_table_20$sum_Delta_Units, digits = 0), big.mark= ",")`) over the total number of units over (`r format(round(Total_overage, digits = 0), big.mark= ",")`), we see that the over 20% units contribute only `r (Over_table_20$sum_Delta_Units/Total_overage)*100` percent to the total overage.
 
 
 Lastly, We can take a look at the top ten Vendor's with large delta's (> 10,000) and percent difference greater zero to calculate their mean percent difference. 
 
 ```{r}
 Overages_nodupe %>%   
-  mutate(PAR_VENDOR_LEGAL_DESC = replace(PAR_VENDOR_LEGAL_DESC, PAR_VENDOR_LEGAL_DESC=="TETS N RAI", "TETS N RAI INTERNATIONAL"))%>%
+  mutate(PAR_VENDOR_LEGAL_DESC = replace(PAR_VENDOR_LEGAL_DESC, 
+      PAR_VENDOR_LEGAL_DESC=="TETS N RAI", "TETS N RAI INTERNATIONAL"))%>%
   group_by(PAR_VENDOR_LEGAL_DESC)%>%
   subset(Percent_diff >= 0) %>%
   summarise(Summary_of_Delta = sum(Delta_Units), 
