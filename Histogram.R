@@ -2,6 +2,7 @@ library(dplyr)
 library(readr)
 library(rChoiceDialogs)
 library(xtable)
+library(ggvis)
 
 choose_file_directory <- function()
 {
@@ -83,3 +84,63 @@ Overages %>% group_by(BRD_DIV_DESC) %>% summarise("Units" = sum(INV_RCPT_QTY, na
 Overages %>% group_by(BRD_NM) %>% summarise("Units" = sum(INV_RCPT_QTY, na.rm=TRUE))
 
 Overages %>% group_by(Program_Type) %>% summarise("Units" = sum(INV_RCPT_QTY, na.rm=TRUE))
+
+Overages_nodupe$Percent_diff %>% 
+  subset(Overages_nodupe$Percent_diff > 0) %>% 
+hist( main = "Histogram of % Diff", xlab = "Percent Difference", col = "#00009950", plot = TRUE, xlim = c(-10, 50), ylim= c(0,5500), breaks= c(0, 1,2,3,4,5,10,15,20, max(Overages_nodupe$Percent_diff)), freq = TRUE)
+axis(1, at=c(-5, 5))
+
+
+Overages_nodupe$Percent_diff %>% 
+  subset(Overages_nodupe$Percent_diff > 0) %>% 
+hist( main = "Histogram of % Diff", xlab = "Percent Difference", col = "#00009950", plot = TRUE, xlim = c(-10, 50), ylim= c(0,1), breaks= 10000, freq = FALSE)
+axis(1, at=c(-5, 5))
+
+Hist_values <- Overages_nodupe$Delta_Units %>% 
+  subset(Overages_nodupe$Delta_Units > 0) %>% 
+hist( main = "Histogram of % Diff", 
+      xlab = "Units", 
+      col = "#00009950", 
+      plot = FALSE, ylim= c(0,5500), breaks= 10, freq = TRUE)
+axis(1, at=c(-5, 5))
+
+Overages_nodupe$Delta_Units %>% 
+  subset(Overages_nodupe$Delta_Units > 0) %>%
+  group_by()
+  plot()
+  
+  
+  mx <- Overages_nodupe$Percent_diff
+  my <- Overages_nodupe$Delta_Units
+  
+  h <- Overages_nodupe$Percent_diff %>% 
+    subset(Overages_nodupe$Percent_diff > 0) %>% 
+    hist( main = "Histogram of % Diff", 
+          xlab = "Percent Difference", 
+          col = "#00009950", 
+          plot = FALSE, 
+          xlim = c(-10, 50), 
+          ylim= c(0,5500), 
+          breaks= c(0,1,2,3,4,5,10,15,20,Inf), freq = FALSE)
+  
+  breaks <- data.frame("beg"= h$breaks[-length(h$breaks)], "end"=h$breaks[-1])
+  # counts <- data.frame("beg"= h$counts[-length(h$counts)], "end"=h$counts[-1])
+  
+  sums <- apply(breaks, MARGIN=1, FUN=function(x) { sum(my[ mx >= x[1] & mx < x[2] ]) })
+  
+  #Total_overage <- Overages_nodupe %>% subset(Delta_Units > 0) %>% 
+  #summarise(Summary_of_Delta = sum(Delta_Units))
+  # sums[10] <- Total_overage - sum(sums)
+  h$counts <- sums
+  
+  buckets <- apply(breaks, MARGIN=1, FUN=function(x) {paste(x[1], "to", x[2])})
+  h_table <- buckets[1:9]
+  h_table <- as.data.frame(h_table)
+  h_table[,2] <- h$counts
+  names(h_table) <- c("Percent Bucket", "Unit Count")
+  
+  
+  
+  plot(x=h$breaks[1:9], y=h$counts, xlab = "% Percent Difference", ylab="Sum", main="Sum Delta vs Percent", xlim = c(0, 20))
+  
+  

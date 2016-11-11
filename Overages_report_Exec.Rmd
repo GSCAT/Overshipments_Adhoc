@@ -1,0 +1,260 @@
+---
+title: "Overages Report for OLD NAVY"
+output: pdf_document
+---
+\setlength\parindent{24pt}
+
+```{r, echo = FALSE, message=FALSE, warning=FALSE}
+
+library(dplyr)
+library(readr)
+library(rChoiceDialogs)
+library(xtable)
+library(scales)
+options(digits =3, scipen = 7, big.mark= ",")
+
+
+choose_file_directory <- function()
+{
+  v <- jchoose.dir()
+  return(v)
+}
+
+```
+
+
+```{r, echo=FALSE}
+load(file = "Overages_Git.rtf")
+
+Overages2 <- Overages_Git
+Overages2$Program_Type <- trimws(Overages2$Program_Type, which = "both")
+
+Overages2 <- Overages2 %>% subset( BRD_NM == "OLD NAVY") %>%
+              subset(BRD_DIV_DESC != "FUN ZONE")%>% 
+              subset(Program_Type != "VMI") %>%
+              subset(XPLD_LN_ORD_QTY != 0) %>%
+              subset(INV_RCPT_QTY != 0) %>%
+              na.omit() %>%
+              droplevels()
+
+Overages2$INV_RCPT_QTY <- as.numeric(Overages2$INV_RCPT_QTY)
+Overages2$XPLD_LN_ORD_QTY <- as.numeric(Overages2$XPLD_LN_ORD_QTY)
+Overages2$ORIGIN_COUNTRY_CODE <- as.factor(Overages2$ORIGIN_COUNTRY_CODE)
+Overages2$Total_FCST_ELC <- as.numeric(Overages2$Total_FCST_ELC)
+```
+
+```{r, echo= FALSE}
+Overages2 <- Overages2 %>% 
+  mutate("Percent_diff" = ((INV_RCPT_QTY-XPLD_LN_ORD_QTY)/XPLD_LN_ORD_QTY)*100)
+Overages2 <- Overages2 %>% 
+  mutate("Delta_Units" = (INV_RCPT_QTY - XPLD_LN_ORD_QTY))
+
+```
+
+```{r, echo=FALSE}
+count_of_dupes <- count(Overages2, MKT_PO_ID)
+
+Overages_nodupe <- left_join(Overages2, count_of_dupes, by = "MKT_PO_ID" ) %>% droplevels()
+Overages_nodupe <- subset(Overages_nodupe, n == 1)
+Overages_nodupe$n <- as.factor(Overages_nodupe$n)
+
+Overages_nodupe <- Overages_nodupe[order(-Overages_nodupe$Percent_diff), ]
+```
+
+```{r, echo=FALSE}
+Over_20 <- Overages_nodupe %>% subset(Percent_diff>20)
+Over_5 <- Overages_nodupe %>% subset(Percent_diff>5)
+Under_neg_5 <- Overages_nodupe %>% subset(Percent_diff < c(-5))
+Under_neg_20 <- Overages_nodupe %>% subset(Percent_diff < c(-20))
+
+Over_table_5 <- Over_5 %>% 
+  select(BRD_NM, XPLD_LN_ORD_QTY, INV_RCPT_QTY, Percent_diff, Delta_Units ) %>%
+  group_by(BRD_NM) %>%
+  summarise(sum_XPLD_LN_ORD_QTY = sum(XPLD_LN_ORD_QTY), sum_INV_RCPT_QTY = sum(INV_RCPT_QTY), sum_Delta_Units = sum(Delta_Units))
+
+Over_table_20 <- Over_20 %>% 
+  select(BRD_NM, XPLD_LN_ORD_QTY, INV_RCPT_QTY, Percent_diff, Delta_Units ) %>%
+  group_by(BRD_NM) %>%
+  summarise(sum_XPLD_LN_ORD_QTY = sum(XPLD_LN_ORD_QTY), sum_INV_RCPT_QTY = sum(INV_RCPT_QTY), sum_Delta_Units = sum(Delta_Units))
+
+Under_table_20 <- Under_neg_20 %>% 
+  select(BRD_NM, XPLD_LN_ORD_QTY, INV_RCPT_QTY, Percent_diff, Delta_Units ) %>%
+  group_by(BRD_NM) %>%
+  summarise(sum_XPLD_LN_ORD_QTY = sum(XPLD_LN_ORD_QTY), sum_INV_RCPT_QTY = sum(INV_RCPT_QTY), sum_Delta_Units = sum(Delta_Units))
+
+Under_table_5 <- Under_neg_5 %>% 
+  select(BRD_NM, XPLD_LN_ORD_QTY, INV_RCPT_QTY, Percent_diff, Delta_Units ) %>%
+  group_by(BRD_NM) %>%
+  summarise(sum_XPLD_LN_ORD_QTY = sum(XPLD_LN_ORD_QTY), sum_INV_RCPT_QTY = sum(INV_RCPT_QTY), sum_Delta_Units = sum(Delta_Units))
+
+```
+
+  Data was pulled from the Inbound Unit Forecast table and compared against RMS _TDITW_ table in EDW for DPO's with a _Planned Stock Date_ between 8/2/1015 and 7/30/2016. Ordered Units (_XPLD LN ORD Qty_) were compared to Adjusted Receipt Units (_INV RCPT QTY_) for OLD NAVY to understand the percent difference of units ordered versus recieved. 
+  
+```{r, echo=FALSE}
+Total_overage <- Overages_nodupe %>% subset(Delta_Units > 0) %>% 
+  summarise(Summary_of_Delta = sum(Delta_Units))%>%
+  as.data.frame()
+```
+
+
+
+We observed, that there are still a few PO's with large overages (> 20%). However, the number of units over 20% (`r format(round(Over_table_20$sum_Delta_Units, digits = 0), big.mark= ",")`) divided by the total "overage"" units (`r format(round(Total_overage, digits = 0), big.mark= ",")`), we see that the over 20% units contribute only `r (Over_table_20$sum_Delta_Units/Total_overage)*100`% to the total overage and only `r (Over_table_20$sum_Delta_Units/sum(Overages2$XPLD_LN_ORD_QTY))*100`% of the total order qty.
+
+
+Now we can calculate the percent difference between Order Qty and Receipt Qty in order to plot a frequency distribution of the results. Taking a look at the frequency distribution of the percent difference. 
+
+
+
+
+```{r, echo=FALSE}
+hist(Overages_nodupe$Percent_diff, 
+     main = "Histogram of % Diff", 
+     xlab = "Percent Difference", col = "#00009950",
+     ylab = "Frequency by PO",
+     plot = TRUE, xlim = c(-10, 30), ylim= c(0,3500), breaks= 1500, freq = TRUE)
+axis(1, at=c(-5, 5))
+```
+
+It appears most PO's fall within the +- 5% tolerance allowed. However there seems to be a heavy skew toward +5%.
+
+ Looking into the details, we see that the max percent overage for all DPO's is `r max(Overages_nodupe$Percent_diff)`% and the min is `r min(Overages_nodupe$Percent_diff)`%. So there are still some extremes. And since we are interested in large overages, let's take a look at the unit count of those.
+
+```{r include=FALSE}
+mx <- Overages_nodupe$Percent_diff
+my <- Overages_nodupe$Delta_Units
+
+h <- Overages_nodupe$Percent_diff %>% 
+  subset(Overages_nodupe$Percent_diff > 0) %>% 
+  hist( main = "Histogram of % Diff", 
+        xlab = "Percent Difference", 
+        col = "#00009950", 
+        plot = TRUE, 
+        xlim = c(-10, 50), 
+        ylim= c(0,5500), 
+        breaks= c(0,1,2,3,4,5,10,15,20,Inf), freq = FALSE)
+```
+
+\pagebreak
+
+Taking a look at the breakdown by units for each bucket created by the Percent difference from 0% to > 20%:
+
+```{r include= FALSE}
+breaks <- data.frame("beg"= h$breaks[-length(h$breaks)], "end"=h$breaks[-1])
+# counts <- data.frame("beg"= h$counts[-length(h$counts)], "end"=h$counts[-1])
+
+sums <- apply(breaks, MARGIN=1, FUN=function(x) { sum(my[ mx >= x[1] & mx < x[2] ]) })
+
+#Total_overage <- Overages_nodupe %>% subset(Delta_Units > 0) %>% 
+  #summarise(Summary_of_Delta = sum(Delta_Units))
+# sums[10] <- Total_overage - sum(sums)
+h$counts <- sums
+plot(x=h$breaks[1:9], y=h$counts, xlab = "% Percent Difference", ylab="Sum of Units", main="Delta Units vs Percent Difference", xlim = c(0, 20))
+
+```
+```{r, echo=FALSE}
+buckets <- apply(breaks, MARGIN=1, FUN=function(x) {paste(x[1], "to", x[2])})
+h_table <- buckets[1:9]
+h_table <- as.data.frame(h_table)
+h_table[,2] <- h$counts
+names(h_table) <- c("Percent Bucket", "Unit Count")
+h_table %>% knitr::kable()
+```
+
+
+We can calculate the Unit impact of PO's with over 20% delta.
+
+```{r, echo= FALSE}
+Over_table_20 %>% 
+  as.data.frame()
+
+```
+
+And also PO's over the 5% threshold.
+
+```{r, echo=FALSE}
+Over_table_5%>% 
+  as.data.frame()
+```
+
+Now, what is the net Delta Units (including negative values) for the entire dataset?:
+
+```{r, echo=FALSE}
+Overages_nodupe %>% 
+  summarise(Summary_of_Delta = sum(Delta_Units)) 
+```
+
+Let's also consider the Total Overages (Percent Delta > 0) for the entire data set:
+
+```{r, echo=FALSE}
+Total_overage
+```
+
+
+\pagebreak
+
+As we noted, there seems to be a skew toward the +5% in the frequency distribution above. We should now take a look at the top ten Vendor's with large delta's (> 10,000)--and percent difference greater than zero--calculating their mean percent difference to find out who may be exploiting our allowance. 
+
+```{r echo= FALSE}
+Overages_nodupe %>%   
+  mutate(PAR_VENDOR_LEGAL_DESC = replace(PAR_VENDOR_LEGAL_DESC, 
+      PAR_VENDOR_LEGAL_DESC=="TETS N RAI", "TETS N RAI INTERNATIONAL"))%>%
+  group_by(PAR_VENDOR_LEGAL_DESC)%>%
+  subset(Percent_diff >= 0) %>%
+  summarise(Summary_of_Delta = sum(Delta_Units), 
+            mean_percent_diff = mean(Percent_diff)) %>%
+  subset(Summary_of_Delta > 10000) %>%
+  arrange(desc(mean_percent_diff))%>%
+     rename("Parent Vendor" =PAR_VENDOR_LEGAL_DESC, 
+          "Unit Difference"= Summary_of_Delta, 
+          "% Difference"= mean_percent_diff) %>%
+  head(n=10) %>%
+  knitr::kable()
+```
+
+And by Origin Country...
+
+```{r echo= FALSE}
+Overages_nodupe %>%   
+  group_by(ORIGIN_COUNTRY_CODE)%>%
+  subset(Percent_diff >= 0) %>%
+  summarise(Summary_of_Delta = sum(Delta_Units), 
+            mean_percent_diff = mean(Percent_diff)) %>%
+  subset(Summary_of_Delta > 10000) %>%
+  arrange(desc(mean_percent_diff))%>%
+   rename("Origin Country" =ORIGIN_COUNTRY_CODE, 
+          "Unit Difference"= Summary_of_Delta, 
+          "% Difference"= mean_percent_diff) %>%
+  head(n=10) %>%
+  knitr::kable()
+```
+
+Thank you!
+
+\pagebreak
+
+### Appendix
+
+Taking a quick look at these data, after removing "FUNZONE" and VMI, to check that these have been excluded.
+
+```{r, echo=FALSE}
+# Check droped records
+Overages2 %>% group_by(BRD_DIV_DESC) %>% 
+  summarise("Units" = sum(INV_RCPT_QTY, na.rm=TRUE))%>% 
+  as.data.frame()%>%
+  knitr::kable()
+Overages2 %>% group_by(Program_Type) %>% 
+  summarise("Units" = sum(INV_RCPT_QTY, na.rm=TRUE))%>% 
+  as.data.frame()%>%
+  knitr::kable()
+```
+
+And checking that we have only **OLD NAVY** and also the proper unit count.
+```{r, echo=FALSE}
+Overages2 %>% 
+  group_by(BRD_NM) %>% 
+  summarise("Units" = sum(INV_RCPT_QTY, na.rm=TRUE))%>% 
+  as.data.frame()%>%
+  knitr::kable()
+
+```

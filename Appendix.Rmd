@@ -1,0 +1,26 @@
+
+Appendix:
+  
+  Taking a quick look at these data, after removing "FUNZONE" and VMI, to check that these have been excluded.
+
+```{r, echo=FALSE}
+# Check droped records
+Overages2 %>% group_by(BRD_DIV_DESC) %>% 
+  summarise("Units" = sum(INV_RCPT_QTY, na.rm=TRUE))%>% 
+  as.data.frame()%>%
+  knitr::kable()
+Overages2 %>% group_by(Program_Type) %>% 
+  summarise("Units" = sum(INV_RCPT_QTY, na.rm=TRUE))%>% 
+  as.data.frame()%>%
+  knitr::kable()
+```
+
+And checking that we have only **OLD NAVY** and also the proper unit count.
+```{r, echo=FALSE}
+Overages2 %>% 
+  group_by(BRD_NM) %>% 
+  summarise("Units" = sum(INV_RCPT_QTY, na.rm=TRUE))%>% 
+  as.data.frame()%>%
+  knitr::kable()
+
+```

@@ -4,6 +4,8 @@ output: pdf_document
 ---
 \setlength\parindent{24pt}
 
+
+
 ```{r, echo = FALSE, message=FALSE, warning=FALSE}
 
 library(dplyr)
@@ -69,7 +71,7 @@ Overages2 %>%
 ```
 
 Now we can calculate the percent difference between Order Qty and Receipt Qty in order to plot a frequency distribution of the results. 
-```{r, echo= FALSE}
+```{r, echo=TRUE}
 Overages2 <- Overages2 %>% 
   mutate("Percent_diff" = ((INV_RCPT_QTY-XPLD_LN_ORD_QTY)/XPLD_LN_ORD_QTY)*100)
 Overages2 <- Overages2 %>% 
@@ -87,9 +89,8 @@ Overages_nodupe$n <- as.factor(Overages_nodupe$n)
 Overages_nodupe <- Overages_nodupe[order(-Overages_nodupe$Percent_diff), ]
 ```
 
-Next, we take a look at the frequency distribution of the percent difference. 
-
-```{r, echo=FALSE}
+Finally, we take a look at the frequency distribution of the percent difference. 
+```{r, echo=TRUE}
 hist(Overages_nodupe$Percent_diff, 
      main = "Histogram of % Diff", 
      xlab = "Percent Difference", col = "#00009950", 
@@ -99,13 +100,10 @@ axis(1, at=c(-5, 5))
 
 It appears most PO's fall within the +- 5% tolerance allowed. However there seems to be a heavy skew toward +5%.
 
-Now let's take a look at the extremes of these data to see if there are still large values. Looking in we see that the max overage percent for all DPO's is `r max(Overages_nodupe$Percent_diff)*100`% and the min is `r min(Overages_nodupe$Percent_diff)*100`%.
-
-```{r, echo=FALSE, eval= FALSE}
+Now let's take a look at a quick summary to understand the extremes of these data.
+```{r, echo=FALSE}
 summary(Overages_nodupe)
 ```
-
-
 
 There are still some large overages in these data. Now let's take a look at the impact of those. 
 ```{r, echo=FALSE}
@@ -136,7 +134,7 @@ Under_table_5 <- Under_neg_5 %>%
 
 ```
 
-We can calculate the Unit impact of PO's with over 20% delta.
+We cab calculate the Unit impact of PO's with over 20% delta.
 ```{r, echo= FALSE}
 Over_table_20 %>% 
   as.data.frame()
@@ -206,4 +204,3 @@ Overages_nodupe %>%
   head(n=10) %>%
   knitr::kable()
 ```
-
