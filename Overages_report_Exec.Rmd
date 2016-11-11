@@ -62,10 +62,10 @@ Overages_nodupe <- Overages_nodupe[order(-Overages_nodupe$Percent_diff), ]
 ```
 
 ```{r, echo=FALSE}
-Over_20 <- Overages_nodupe %>% subset(Percent_diff>20)
-Over_5 <- Overages_nodupe %>% subset(Percent_diff>5)
-Under_neg_5 <- Overages_nodupe %>% subset(Percent_diff < c(-5))
-Under_neg_20 <- Overages_nodupe %>% subset(Percent_diff < c(-20))
+Over_20 <- Overages_nodupe %>% subset(Percent_diff>=20)
+Over_5 <- Overages_nodupe %>% subset(Percent_diff>=5)
+Under_neg_5 <- Overages_nodupe %>% subset(Percent_diff <= c(-5))
+Under_neg_20 <- Overages_nodupe %>% subset(Percent_diff <= c(-20))
 
 Over_table_5 <- Over_5 %>% 
   select(BRD_NM, XPLD_LN_ORD_QTY, INV_RCPT_QTY, Percent_diff, Delta_Units ) %>%
