@@ -1,8 +1,11 @@
 ---
 title: "Overages Report for OLD NAVY"
-output: pdf_document
+output:
+    pdf_document
 ---
 \setlength\parindent{24pt}
+
+
 
 ```{r, echo = FALSE, message=FALSE, warning=FALSE}
 
@@ -139,7 +142,7 @@ h <- Overages_nodupe$Percent_diff %>%
 
 Taking a look at the breakdown by units for each bucket created by the Percent difference from 0% to > 20%:
 
-```{r include= FALSE}
+```{r include=FALSE}
 breaks <- data.frame("beg"= h$breaks[-length(h$breaks)], "end"=h$breaks[-1])
 # counts <- data.frame("beg"= h$counts[-length(h$counts)], "end"=h$counts[-1])
 
@@ -152,7 +155,8 @@ h$counts <- sums
 plot(x=h$breaks[1:9], y=h$counts, xlab = "% Percent Difference", ylab="Sum of Units", main="Delta Units vs Percent Difference", xlim = c(0, 20))
 
 ```
-```{r, echo=FALSE}
+
+```{r include=FALSE}
 buckets <- apply(breaks, MARGIN=1, FUN=function(x) {paste(x[1], "to", x[2])})
 h_table <- buckets[1:9]
 h_table <- as.data.frame(h_table)
@@ -161,6 +165,43 @@ names(h_table) <- c("Percent Bucket", "Unit Count")
 h_table %>% knitr::kable()
 ```
 
+```{r include=FALSE}
+mx <- Overages_nodupe$Percent_diff
+my <- Overages_nodupe$Delta_Units
+
+h <- Overages_nodupe$Percent_diff %>% 
+  subset(Overages_nodupe$Percent_diff > 0) %>% 
+  hist( main = "Histogram of % Diff", 
+        xlab = "Percent Difference", 
+        col = "#00009950", 
+        plot = TRUE, 
+        xlim = c(-10, 50), 
+        ylim= c(0,5500), 
+        breaks= c(0,1,2,3,4,5,10,15,20,Inf), freq = FALSE)
+```
+```{r include=FALSE}
+  breaks <- data.frame("beg"= h$breaks[-length(h$breaks)], "end"=h$breaks[-1])
+  # counts <- data.frame("beg"= h$counts[-length(h$counts)], "end"=h$counts[-1])
+  
+  sums <- apply(breaks, MARGIN=1, FUN=function(x) { sum(my[ mx >= x[1] & mx < x[2] ]) })
+  
+  #Total_overage <- Overages_nodupe %>% subset(Delta_Units > 0) %>% 
+  #summarise(Summary_of_Delta = sum(Delta_Units))
+  # sums[10] <- Total_overage - sum(sums)
+  # h$sums <- sums
+  plot(x=h$breaks[1:9], y=h$counts, xlab = "% Percent Difference", ylab="Sum of Units", main="Delta Units vs Percent Difference", xlim = c(0, 20))
+```
+```{r echo=FALSE} 
+  buckets <- apply(breaks, MARGIN=1, FUN=function(x) {paste(x[1], "to", x[2])})
+  # h_table <- buckets[1:9]
+  # h_table <- as.data.frame(h_table)
+  # h_table[,2] <- h$counts
+perc_total <- (h$counts/sum(h$counts))*100
+  h_table <- as.data.frame(cbind(buckets[1:9], format(floor(h$counts), big.mark = ","), format(perc_total, digits = 1), format(floor(sums[1:9]), big.mark = ",")))
+
+names(h_table) <- c("Percent Bucket", "Count of PO's", "Percent Total", "Unit Count")
+h_table %>% knitr::kable(align='r')
+```
 
 We can calculate the Unit impact of PO's with over 20% delta.
 
@@ -207,9 +248,9 @@ Overages_nodupe %>%
   arrange(desc(mean_percent_diff))%>%
      rename("Parent Vendor" =PAR_VENDOR_LEGAL_DESC, 
           "Unit Difference"= Summary_of_Delta, 
-          "% Difference"= mean_percent_diff) %>%
+          "Average % Difference"= mean_percent_diff) %>%
   head(n=10) %>%
-  knitr::kable()
+  knitr::kable( format.args = list(big.mark = ','))
 ```
 
 And by Origin Country...
@@ -224,10 +265,74 @@ Overages_nodupe %>%
   arrange(desc(mean_percent_diff))%>%
    rename("Origin Country" =ORIGIN_COUNTRY_CODE, 
           "Unit Difference"= Summary_of_Delta, 
-          "% Difference"= mean_percent_diff) %>%
+          "Average % Difference"= mean_percent_diff) %>%
   head(n=10) %>%
-  knitr::kable()
+  knitr::kable( format.args = list(big.mark = ','))
 ```
+
+\pagebreak
+
+```{r include=FALSE}
+mx <- Overages_nodupe$Percent_diff
+my <- Overages_nodupe$Delta_Units
+
+h <- Overages_nodupe$Percent_diff %>% 
+  subset(Overages_nodupe$Percent_diff > 0) %>% 
+  hist( main = "Histogram of % Diff", 
+        xlab = "Percent Difference", 
+        col = "#00009950", 
+        plot = TRUE, 
+        xlim = c(-10, 50), 
+        ylim= c(0,5500), 
+        breaks= c(0,1,2,3,4,5,10,15,20,Inf), freq = FALSE)
+```
+```{r include=FALSE}
+  breaks <- data.frame("beg"= h$breaks[-length(h$breaks)], "end"=h$breaks[-1])
+  # counts <- data.frame("beg"= h$counts[-length(h$counts)], "end"=h$counts[-1])
+  
+  sums <- apply(breaks, MARGIN=1, FUN=function(x) { sum(my[ mx >= x[1] & mx < x[2] ]) })
+  
+  #Total_overage <- Overages_nodupe %>% subset(Delta_Units > 0) %>% 
+  #summarise(Summary_of_Delta = sum(Delta_Units))
+  # sums[10] <- Total_overage - sum(sums)
+  # h$sums <- sums
+  plot(x=h$breaks[1:9], y=h$counts, xlab = "% Percent Difference", ylab="Sum of Units", main="Delta Units vs Percent Difference", xlim = c(0, 20))
+```
+```{r include =FALSE} 
+  buckets <- apply(breaks, MARGIN=1, FUN=function(x) {paste(x[1], "to", x[2])})
+  # h_table <- buckets[1:9]
+  # h_table <- as.data.frame(h_table)
+  # h_table[,2] <- h$counts
+perc_total <- (h$counts/sum(h$counts))*100
+  h_table <- as.data.frame(cbind(buckets[1:9], h$counts, perc_total, floor(sums[1:9])))
+
+names(h_table) <- c("Percent Bucket", "Count of PO's", "Percent Total", "Unit Count")
+  h_table %>% knitr::kable()
+  
+```
+
+
+
+\pagebreak
+
+```{r include=FALSE}
+POs_Over_20 <- Overages_nodupe %>% subset(Percent_diff >=20)
+```
+
+Zooming in to see the large overages: 
+
+```{r echo=FALSE}
+hist(POs_Over_20$Percent_diff, 
+     main = "Histogram of % Diff", 
+     xlab = "Percent Difference", col = "#00009950",
+     ylab = "Frequency by PO",
+     plot = TRUE, xlim = c(20, 900), ylim= c(0,20), breaks= 120, freq = TRUE)
+axis(1, at=c(20, 60, 100))
+```
+
+What we are seeing above, seems to be instances where DC's are accepting Units on comparable PO's (same pack factor and CC) but not the original. We know that this occurs from speaking to IM teams. 
+
+Looking deeper, there are instances where there is an underage on a PO(s) and a overage on a different PO(s) with same style. I do not see *exactly* a one-to-one relationship in these data--though this seems to be an artifact of the time bound used. During a cursory look, it did hold true that the PO's in question are at the edges of the time bound. Would need to repull the data--matching at style level--to get an accurate summation.
 
 Thank you!
 
@@ -242,19 +347,32 @@ Taking a quick look at these data, after removing "FUNZONE" and VMI, to check th
 Overages2 %>% group_by(BRD_DIV_DESC) %>% 
   summarise("Units" = sum(INV_RCPT_QTY, na.rm=TRUE))%>% 
   as.data.frame()%>%
-  knitr::kable()
+  knitr::kable( format.args = list(big.mark = ','))
 Overages2 %>% group_by(Program_Type) %>% 
   summarise("Units" = sum(INV_RCPT_QTY, na.rm=TRUE))%>% 
   as.data.frame()%>%
-  knitr::kable()
+  knitr::kable( format.args = list(big.mark = ','))
 ```
 
 And checking that we have only **OLD NAVY** and also the proper unit count.
+
 ```{r, echo=FALSE}
 Overages2 %>% 
   group_by(BRD_NM) %>% 
   summarise("Units" = sum(INV_RCPT_QTY, na.rm=TRUE))%>% 
   as.data.frame()%>%
-  knitr::kable()
+  knitr::kable( format.args = list(big.mark = ','))
 
 ```
+
+
+```{r include= FALSE}
+POs_Over_20 <- Overages_nodupe %>% subset(Percent_diff >=20)
+POs_Under_0 <- Overages_nodupe %>% subset(Percent_diff < 0)
+Under_over_join <- left_join(POs_Over_20, POs_Under_0, by = "OPR_BRD_STY_ID")
+Under_over_join <- subset(Under_over_join, n.y==1) 
+
+knitr::kable(Under_over_join[, c(2, 6, 18, 24, 36 )])
+
+```
+

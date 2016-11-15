@@ -143,4 +143,20 @@ Overages_nodupe$Delta_Units %>%
   
   plot(x=h$breaks[1:9], y=h$counts, xlab = "% Percent Difference", ylab="Sum", main="Sum Delta vs Percent", xlim = c(0, 20))
   
+  breaks <- data.frame("beg"= h$breaks[-length(h$breaks)], "end"=h$breaks[-1])
+  # counts <- data.frame("beg"= h$counts[-length(h$counts)], "end"=h$counts[-1])
+  
+  # sums <- apply(breaks, MARGIN=1, FUN=function(x) { sum(my[ mx >= x[1] & mx < x[2] ]) })
+  
+  #Total_overage <- Overages_nodupe %>% subset(Delta_Units > 0) %>% 
+  #summarise(Summary_of_Delta = sum(Delta_Units))
+  # sums[10] <- Total_overage - sum(sums)
+  # h$counts <- sums
+  plot(x=h$breaks[1:9], y=h$counts, xlab = "% Percent Difference", ylab="Sum of Units", main="Delta Units vs Percent Difference", xlim = c(0, 20))
+  buckets <- apply(breaks, MARGIN=1, FUN=function(x) {paste(x[1], "to", x[2])})
+  h_table <- buckets[1:9]
+  h_table <- as.data.frame(h_table)
+  h_table[,2] <- h$counts
+  names(h_table) <- c("Percent Bucket", "Percent")
+  h_table %>% knitr::kable()
   
